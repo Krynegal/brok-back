@@ -6,37 +6,17 @@ import (
 	"os"
 	"runtime/debug"
 
+	"brok/db"
+	"brok/internal/handler"
+	"brok/internal/routes"
+	"brok/internal/storage"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-
-	"brok/db"
-	_ "brok/docs" // This will be generated
-	"brok/internal/handler"
-	"brok/internal/routes"
-	"brok/internal/storage"
 )
 
-// @title           Brok API
-// @version         1.0
-// @description     A financial tracking API
-// @termsOfService  http://swagger.io/terms/
-
-// @contact.name   API Support
-// @contact.url    http://www.swagger.io/support
-// @contact.email  support@swagger.io
-
-// @license.name  Apache 2.0
-// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
-
-// @host      localhost:8080
-// @BasePath  /
-
-// @securityDefinitions.apikey Bearer
-// @in header
-// @name Authorization
-// @description Type "Bearer" followed by a space and JWT token.
 func main() {
 	// Загружаем .env файл
 	if err := godotenv.Load(); err != nil {
@@ -64,8 +44,13 @@ func main() {
 	transactionHandler := handler.NewTransactionHandler(storage)
 	r := gin.Default()
 
-	// Swagger documentation
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+	// This route serves our static swagger.yaml file
+	r.StaticFile("/swagger.yaml", "./swagger.yaml")
+
+	// This route serves the interactive Swagger UI
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler,
+		ginSwagger.URL("/swagger.yaml"), // Point the UI to our spec file
+	))
 
 	// Добавляем middleware для обработки паники
 	r.Use(func(c *gin.Context) {

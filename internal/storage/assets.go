@@ -74,8 +74,8 @@ func (s *PqStorage) IsAssetOwnedByUser(ctx context.Context, assetID string, user
 		ctx,
 		&exists,
 		`SELECT EXISTS (
-			SELECT 1 FROM assets WHERE id = $1 AND user_id = $2
-		)`,
+		SELECT 1 FROM assets WHERE id = $1 AND user_id = $2
+	)`,
 		assetID, userID,
 	)
 	return exists, err

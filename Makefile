@@ -18,11 +18,11 @@ check: test lint
 
 # Run migrations up
 migrate-up:
-	docker run --rm -v $(PWD)/db/migrations:/migrations --network host migrate/migrate -path=/migrations -database "postgres://postgres:postgres@localhost:5432/tracker?sslmode=disable" up
+	docker run --rm -v $(PWD)/db/migrations:/migrations --network host migrate/migrate -path=/migrations -database "postgres://postgres:postgres@localhost:5433/tracker?sslmode=disable" up
 
 # Run migrations down
 migrate-down:
-	docker run --rm -v $(PWD)/db/migrations:/migrations --network host migrate/migrate -path=/migrations -database "postgres://postgres:postgres@localhost:5432/tracker?sslmode=disable" down
+	docker run --rm -v $(PWD)/db/migrations:/migrations --network host migrate/migrate -path=/migrations -database "postgres://postgres:postgres@localhost:5433/tracker?sslmode=disable" down
 
 # Run application locally
 run:

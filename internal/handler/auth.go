@@ -23,17 +23,6 @@ func NewAuthHandler(s storage.Storage) *AuthHandler {
 	}
 }
 
-// GetCurrentUser godoc
-// @Summary Get current user information
-// @Description Get information about the currently authenticated user
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Security Bearer
-// @Success 200 {object} models.User
-// @Failure 401 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /api/me [get]
 func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -56,18 +45,6 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// Register godoc
-// @Summary Register a new user
-// @Description Create a new user account
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body models.RegisterRequest true "Register Request"
-// @Success 200 {object} models.LoginResponse
-// @Failure 400 {object} map[string]string
-// @Failure 409 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -120,18 +97,6 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusOK, models.LoginResponse{Token: token})
 }
 
-// Login godoc
-// @Summary Login user
-// @Description Authenticate user and get JWT token
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body models.LoginRequest true "Login Request"
-// @Success 200 {object} models.LoginResponse
-// @Failure 400 {object} map[string]string
-// @Failure 401 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req models.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
