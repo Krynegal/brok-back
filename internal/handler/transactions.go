@@ -39,9 +39,7 @@ func (h *TransactionHandler) GetTransactionsByAsset(c *gin.Context) {
 	assetID := c.Param("id")
 
 	// Получаем транзакции для указанного актива
-	var transactions []models.Transaction
-
-	err := h.Storage.GetTransactionsByAssetID(c, assetID, &transactions)
+	transactions, err := h.Storage.GetTransactionsByAssetID(c, assetID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to retrieve transactions"})
 		return
@@ -67,7 +65,7 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	var req models.CreateTransactionRequest
 	// Чтение данных из запроса
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

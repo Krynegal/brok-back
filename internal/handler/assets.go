@@ -45,27 +45,36 @@ func (h *AssetHandler) GetAssets(c *gin.Context) {
 
 func (h *AssetHandler) UpdateAsset(c *gin.Context) {
 	var req models.UpdateAssetRequest
-	// Чтение запроса на обновление данных
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
 		return
 	}
 
-	newAsset := models.Asset{}
+	assetID := c.Param("id")
+	userID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	asset := models.Asset{
+		ID:     assetID,
+		UserID: userID.(string),
+	}
 
 	if req.Name != nil {
-		newAsset.Name = *req.Name
+		asset.Name = *req.Name
 	}
 
 	if req.Type != nil {
-		newAsset.Type = *req.Type
+		asset.Type = *req.Type
 	}
 
 	if req.Balance != nil {
-		newAsset.Balance = *req.Balance
+		asset.Balance = *req.Balance
 	}
 
-	err := h.Storage.AssetSet(c, newAsset)
+	err := h.Storage.AssetSet(c, asset)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update asset"})
 		return

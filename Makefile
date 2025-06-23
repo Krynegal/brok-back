@@ -1,4 +1,4 @@
-.PHONY: test lint deps check migrate-up migrate-down run
+.PHONY: test lint deps check migrate-up migrate-down run debug
 
 # Run tests
 test:
@@ -26,4 +26,15 @@ migrate-down:
 
 # Run application locally
 run:
-	go run cmd/main.go 
+	go run cmd/main.go
+
+# Define a variable for the Delve binary
+DLV := $(shell go env GOPATH)/bin/dlv
+
+# Run application in debug mode with Delve
+debug:
+	@if ! [ -x "$(DLV)" ]; then \
+		echo "Installing Delve..."; \
+		go install github.com/go-delve/delve/cmd/dlv@latest; \
+	fi
+	$(DLV) debug ./cmd/main.go 

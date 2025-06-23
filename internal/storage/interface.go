@@ -25,7 +25,7 @@ type Storage interface {
 	IsAssetOwnedByUser(ctx context.Context, assetID string, userID string) (bool, error)
 
 	// transaction
-	GetTransactionsByAssetID(ctx context.Context, assetID string, transactions *[]models.Transaction) error
+	GetTransactionsByAssetID(ctx context.Context, assetID string) ([]models.Transaction, error)
 	CreateTransaction(ctx context.Context, transaction models.Transaction) error
 	DeleteTransaction(ctx context.Context, transactionID string) error
 	IsTransactionOwnedByUser(ctx context.Context, transactionID string, userID string) (bool, error)

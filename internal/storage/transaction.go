@@ -14,12 +14,28 @@ func (s *PqStorage) DeleteTransactionsByAssetID(ctx context.Context, assetID str
 	return err
 }
 
-func (s *PqStorage) GetTransactionsByAssetID(ctx context.Context, assetID string, transactions *[]models.Transaction) error {
-	return s.db.SelectContext(ctx, transactions,
+func (s *PqStorage) GetTransactionsByAssetID(ctx context.Context, assetID string) ([]models.Transaction, error) {
+	transactions := []models.Transaction{}
+
+	rows, err := s.db.QueryxContext(ctx,
 		`SELECT id, asset_id, amount, type, description, timestamp 
 		FROM transactions 
 		WHERE asset_id = $1`,
 		assetID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var transaction models.Transaction
+		if err := rows.StructScan(&transaction); err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, transaction)
+	}
+
+	return transactions, nil
 }
 
 func (s *PqStorage) CreateTransaction(ctx context.Context, transaction models.Transaction) error {
