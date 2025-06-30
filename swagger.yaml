@@ -1,7 +1,18 @@
 openapi: 3.0.0
 info:
   title: Brok API
-  description: A financial tracking API for brok.
+  description: |
+    A financial tracking API for brok.
+    
+    ## Key Features:
+    - **Automatic Balance Updates**: Asset balances are automatically updated when transactions are created or deleted
+    - **Transaction Types**: Support for 'income' (positive balance change) and 'expense' (negative balance change)
+    - **Real-time Balance Calculation**: Asset balance reflects the sum of all associated transactions
+    
+    ## Transaction Behavior:
+    - **Creating a transaction**: Automatically updates the asset's balance
+    - **Deleting a transaction**: Automatically reverses the balance change
+    - **Balance calculation**: Balance = sum(income transactions) - sum(expense transactions)
   version: 1.0.0
 servers:
   - url: http://localhost:8080
@@ -175,6 +186,14 @@ paths:
       tags:
         - transactions
       summary: Create a new transaction for an asset
+      description: |
+        Creates a new transaction for the specified asset. 
+        
+        **Important**: The asset's balance will be automatically updated:
+        - For 'income' transactions: balance increases by the amount
+        - For 'expense' transactions: balance decreases by the amount
+        
+        The operation is atomic - both the transaction creation and balance update happen in a single database transaction.
       security:
         - BearerAuth: []
       parameters:
@@ -193,9 +212,22 @@ paths:
               $ref: '#/components/schemas/CreateTransactionRequest'
       responses:
         '200':
-          description: Transaction created successfully
+          description: Transaction created successfully and asset balance updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "transaction created successfully"
+                  transaction_id:
+                    type: string
+                    format: uuid
         '400':
-          description: Invalid request body
+          description: Invalid request body or asset not found
+        '401':
+          description: Unauthorized
         '404':
           description: Asset not found
   /api/transactions/{id}:
@@ -203,6 +235,14 @@ paths:
       tags:
         - transactions
       summary: Delete a transaction
+      description: |
+        Deletes a transaction and automatically reverses its effect on the asset's balance.
+        
+        **Important**: The asset's balance will be automatically updated:
+        - If the deleted transaction was 'income': balance decreases by the transaction amount
+        - If the deleted transaction was 'expense': balance increases by the transaction amount
+        
+        The operation is atomic - both the transaction deletion and balance update happen in a single database transaction.
       security:
         - BearerAuth: []
       parameters:
@@ -215,7 +255,19 @@ paths:
             format: uuid
       responses:
         '200':
-          description: Transaction deleted successfully
+          description: Transaction deleted successfully and asset balance updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "transaction deleted successfully"
+        '400':
+          description: Transaction not found or doesn't belong to user
+        '401':
+          description: Unauthorized
         '404':
           description: Transaction not found
 components:
@@ -248,6 +300,10 @@ components:
         balance:
           type: number
           format: decimal
+          description: |
+            Current balance of the asset. 
+            This value is automatically calculated and updated based on all associated transactions.
+            Balance = sum(income transactions) - sum(expense transactions)
         created_at:
           type: string
           format: date-time
@@ -263,14 +319,21 @@ components:
         amount:
           type: number
           format: decimal
+          description: The monetary amount of the transaction
         type:
           type: string
           enum: [income, expense]
+          description: |
+            Type of transaction:
+            - 'income': Increases the asset balance (positive effect)
+            - 'expense': Decreases the asset balance (negative effect)
         description:
           type: string
+          description: Human-readable description of the transaction
         timestamp:
           type: string
           format: date-time
+          description: When the transaction was created
     RegisterRequest:
       type: object
       required: [email, password]
@@ -320,11 +383,20 @@ components:
         amount:
           type: number
           format: decimal
+          description: The monetary amount of the transaction
+          example: 100.50
         type:
           type: string
           enum: [income, expense]
+          description: |
+            Type of transaction:
+            - 'income': Increases the asset balance
+            - 'expense': Decreases the asset balance
+          example: "income"
         description:
           type: string
+          description: Human-readable description of the transaction
+          example: "Salary payment"
   securitySchemes:
     BearerAuth:
       type: http

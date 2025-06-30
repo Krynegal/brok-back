@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -91,8 +92,26 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		Timestamp:   time.Now(),
 	}
 
-	// Сохраняем транзакцию
-	err = h.Storage.CreateTransaction(c, transaction)
+	// Выполняем операции в транзакции
+	err = h.Storage.Transaction(c, func(ctx context.Context, tx storage.Tx) error {
+		// Создаем транзакцию
+		if err := h.Storage.CreateTransactionTx(ctx, tx, transaction); err != nil {
+			return err
+		}
+
+		// Определяем изменение баланса
+		var balanceChange float64
+		switch req.Type {
+		case "income":
+			balanceChange = req.Amount
+		case "expense":
+			balanceChange = -req.Amount
+		}
+
+		// Обновляем баланс актива
+		return h.Storage.UpdateAssetBalanceTx(ctx, tx, assetID, balanceChange)
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create transaction"})
 		return
@@ -125,8 +144,31 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 		return
 	}
 
-	// Удаляем транзакцию
-	err = h.Storage.DeleteTransaction(c, transactionID)
+	// Выполняем операции в транзакции
+	err = h.Storage.Transaction(c, func(ctx context.Context, tx storage.Tx) error {
+		// Получаем данные транзакции
+		transaction, err := h.Storage.GetTransactionByIDTx(ctx, tx, transactionID)
+		if err != nil {
+			return err
+		}
+
+		// Удаляем транзакцию
+		if err := h.Storage.DeleteTransactionTx(ctx, tx, transactionID); err != nil {
+			return err
+		}
+
+		// Отменяем эффект удаленной транзакции
+		var balanceChange float64
+		switch transaction.Type {
+		case "income":
+			balanceChange = -transaction.Amount // отменяем доход
+		case "expense":
+			balanceChange = transaction.Amount // отменяем расход
+		}
+
+		return h.Storage.UpdateAssetBalanceTx(ctx, tx, transaction.AssetID, balanceChange)
+	})
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete transaction"})
 		return

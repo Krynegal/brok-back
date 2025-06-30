@@ -23,13 +23,21 @@ type Storage interface {
 	AssetSet(ctx context.Context, asset models.Asset) error
 	DeleteAsset(ctx context.Context, assetID string) error
 	IsAssetOwnedByUser(ctx context.Context, assetID string, userID string) (bool, error)
+	UpdateAssetBalance(ctx context.Context, assetID string, balanceChange float64) error
+	UpdateAssetBalanceTx(ctx context.Context, tx Tx, assetID string, balanceChange float64) error
 
 	// transaction
 	GetTransactionsByAssetID(ctx context.Context, assetID string) ([]models.Transaction, error)
+	GetTransactionsByAssetIDTx(ctx context.Context, tx Tx, assetID string) ([]models.Transaction, error)
 	CreateTransaction(ctx context.Context, transaction models.Transaction) error
 	DeleteTransaction(ctx context.Context, transactionID string) error
 	IsTransactionOwnedByUser(ctx context.Context, transactionID string, userID string) (bool, error)
 	DeleteTransactionsByAssetID(ctx context.Context, assetID string) error
+	CreateTransactionTx(ctx context.Context, tx Tx, transaction models.Transaction) error
+	DeleteTransactionTx(ctx context.Context, tx Tx, transactionID string) error
+	GetTransactionByID(ctx context.Context, transactionID string) (*models.Transaction, error)
+	GetTransactionByIDTx(ctx context.Context, tx Tx, transactionID string) (*models.Transaction, error)
+	DeleteTransactionsByAssetIDTx(ctx context.Context, tx Tx, assetID string) error
 
 	// служебные
 	Transaction(ctx context.Context, f TxFunc) (err error)
@@ -45,4 +53,5 @@ type Tx interface {
 	QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 	QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error)
+	GetContext(ctx context.Context, dest any, query string, args ...any) error
 }

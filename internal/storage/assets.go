@@ -78,3 +78,18 @@ func (s *PqStorage) IsAssetOwnedByUser(ctx context.Context, assetID string, user
 	)
 	return exists, err
 }
+
+// UpdateAssetBalance обновляет баланс актива на заданную величину
+func (s *PqStorage) UpdateAssetBalance(ctx context.Context, assetID string, balanceChange float64) error {
+	return s.UpdateAssetBalanceTx(ctx, s.db, assetID, balanceChange)
+}
+
+// UpdateAssetBalanceTx обновляет баланс актива на заданную величину через транзакцию
+func (s *PqStorage) UpdateAssetBalanceTx(ctx context.Context, tx Tx, assetID string, balanceChange float64) error {
+	_, err := tx.ExecContext(
+		ctx,
+		`UPDATE assets SET balance = balance + $1 WHERE id = $2`,
+		balanceChange, assetID,
+	)
+	return err
+}

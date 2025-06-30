@@ -6,7 +6,11 @@ import (
 )
 
 func (s *PqStorage) DeleteTransactionsByAssetID(ctx context.Context, assetID string) error {
-	_, err := s.db.ExecContext(
+	return s.DeleteTransactionsByAssetIDTx(ctx, s.db, assetID)
+}
+
+func (s *PqStorage) DeleteTransactionsByAssetIDTx(ctx context.Context, tx Tx, assetID string) error {
+	_, err := tx.ExecContext(
 		ctx,
 		`delete from transactions where asset_id=$1`,
 		assetID,
@@ -15,9 +19,13 @@ func (s *PqStorage) DeleteTransactionsByAssetID(ctx context.Context, assetID str
 }
 
 func (s *PqStorage) GetTransactionsByAssetID(ctx context.Context, assetID string) ([]models.Transaction, error) {
+	return s.GetTransactionsByAssetIDTx(ctx, s.db, assetID)
+}
+
+func (s *PqStorage) GetTransactionsByAssetIDTx(ctx context.Context, tx Tx, assetID string) ([]models.Transaction, error) {
 	transactions := []models.Transaction{}
 
-	rows, err := s.db.QueryxContext(ctx,
+	rows, err := tx.QueryxContext(ctx,
 		`SELECT id, asset_id, amount, type, description, timestamp 
 		FROM transactions 
 		WHERE asset_id = $1`,
@@ -39,7 +47,11 @@ func (s *PqStorage) GetTransactionsByAssetID(ctx context.Context, assetID string
 }
 
 func (s *PqStorage) CreateTransaction(ctx context.Context, transaction models.Transaction) error {
-	_, err := s.db.NamedExecContext(
+	return s.CreateTransactionTx(ctx, s.db, transaction)
+}
+
+func (s *PqStorage) CreateTransactionTx(ctx context.Context, tx Tx, transaction models.Transaction) error {
+	_, err := tx.NamedExecContext(
 		ctx,
 		`INSERT INTO transactions (id, asset_id, amount, type, description, timestamp)
 		VALUES (:id, :asset_id, :amount, :type, :description, :timestamp)`,
@@ -49,12 +61,34 @@ func (s *PqStorage) CreateTransaction(ctx context.Context, transaction models.Tr
 }
 
 func (s *PqStorage) DeleteTransaction(ctx context.Context, transactionID string) error {
-	_, err := s.db.ExecContext(
+	return s.DeleteTransactionTx(ctx, s.db, transactionID)
+}
+
+func (s *PqStorage) DeleteTransactionTx(ctx context.Context, tx Tx, transactionID string) error {
+	_, err := tx.ExecContext(
 		ctx,
 		`DELETE FROM transactions WHERE id = $1`,
 		transactionID,
 	)
 	return err
+}
+
+func (s *PqStorage) GetTransactionByID(ctx context.Context, transactionID string) (*models.Transaction, error) {
+	return s.GetTransactionByIDTx(ctx, s.db, transactionID)
+}
+
+func (s *PqStorage) GetTransactionByIDTx(ctx context.Context, tx Tx, transactionID string) (*models.Transaction, error) {
+	var transaction models.Transaction
+	err := tx.GetContext(
+		ctx,
+		&transaction,
+		`SELECT id, asset_id, amount, type, description, timestamp FROM transactions WHERE id = $1`,
+		transactionID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &transaction, nil
 }
 
 func (s *PqStorage) IsTransactionOwnedByUser(ctx context.Context, transactionID string, userID string) (bool, error) {
