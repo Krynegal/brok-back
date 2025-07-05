@@ -74,8 +74,12 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	log.Printf("🚀 Сервер запущен на порту %s", port)
-	if err := r.Run(":" + port); err != nil {
+	host := os.Getenv("HOST")
+	if host == "" {
+		host = "0.0.0.0" // Bind to all interfaces for external access
+	}
+	log.Printf("🚀 Сервер запущен на %s:%s", host, port)
+	if err := r.Run(host + ":" + port); err != nil {
 		log.Fatalf("❌ Не удалось запустить сервер: %v", err)
 	}
 }

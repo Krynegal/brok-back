@@ -102,10 +102,18 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		// Определяем изменение баланса
 		var balanceChange float64
 		switch req.Type {
-		case "income":
+		case "deposit":
 			balanceChange = req.Amount
-		case "expense":
+		case "withdrawal":
 			balanceChange = -req.Amount
+		case "buy":
+			balanceChange = -req.Amount
+		case "sell":
+			balanceChange = req.Amount
+		case "revaluation":
+			balanceChange = req.Amount // может быть как +, так и -
+		case "dividend":
+			balanceChange = req.Amount
 		}
 
 		// Обновляем баланс актива
@@ -160,10 +168,18 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 		// Отменяем эффект удаленной транзакции
 		var balanceChange float64
 		switch transaction.Type {
-		case "income":
-			balanceChange = -transaction.Amount // отменяем доход
-		case "expense":
-			balanceChange = transaction.Amount // отменяем расход
+		case "deposit":
+			balanceChange = -transaction.Amount
+		case "withdrawal":
+			balanceChange = transaction.Amount
+		case "buy":
+			balanceChange = transaction.Amount
+		case "sell":
+			balanceChange = -transaction.Amount
+		case "revaluation":
+			balanceChange = -transaction.Amount
+		case "dividend":
+			balanceChange = -transaction.Amount
 		}
 
 		return h.Storage.UpdateAssetBalanceTx(ctx, tx, transaction.AssetID, balanceChange)

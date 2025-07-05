@@ -43,9 +43,9 @@ func (s *PqStorage) AssetSet(ctx context.Context, asset models.Asset) error {
 	const query = `
 		insert into assets(id, user_id, name, type, balance, created_at)
 		values (:id, :user_id, :name, :type, :balance, :created_at)
-		on conflict(id) do update
+        on conflict(id) do update
 		set name=excluded.name,
-		    type=excluded.type,
+                type=excluded.type,
 		    balance=excluded.balance
 	`
 

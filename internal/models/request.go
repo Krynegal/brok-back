@@ -16,7 +16,7 @@ type UpdateAssetRequest struct {
 // CreateTransactionRequest используется для данных при создании транзакции
 type CreateTransactionRequest struct {
 	Amount      float64 `json:"amount"`
-	Type        string  `json:"type" binding:"required,oneof=income expense"` // Проверка на допустимые значения
+	Type        string  `json:"type" binding:"required,oneof=deposit withdrawal buy sell revaluation dividend"` // Тип операции
 	Description string  `json:"description"`
 }
 

@@ -307,6 +307,24 @@ components:
         created_at:
           type: string
           format: date-time
+        xirr:
+          type: number
+          format: float
+          description: XIRR доходность актива (рассчитывается на лету, не хранится в базе)
+        apy:
+          type: number
+          format: float
+          description: APY доходность актива (рассчитывается на лету, не хранится в базе)
+        apr:
+          type: number
+          format: float
+          description: APR доходность актива (рассчитывается на лету, не хранится в базе)
+        profit:
+          type: number
+          format: float
+          description: |
+            Чистая прибыль актива (рассчитывается на лету, не хранится в базе).
+            Формула: Текущий баланс - Сумма вложений (deposits) + Сумма выводов (withdrawals) + Дивиденды (dividends)
     Transaction:
       type: object
       properties:
@@ -322,11 +340,15 @@ components:
           description: The monetary amount of the transaction
         type:
           type: string
-          enum: [income, expense]
+          enum: [deposit, withdrawal, buy, sell, revaluation, dividend]
           description: |
             Type of transaction:
-            - 'income': Increases the asset balance (positive effect)
-            - 'expense': Decreases the asset balance (negative effect)
+            - 'deposit': Ввод средств (увеличивает денежный баланс)
+            - 'withdrawal': Вывод средств (уменьшает денежный баланс)
+            - 'buy': Покупка актива (уменьшает денежный баланс, увеличивает количество актива)
+            - 'sell': Продажа актива (увеличивает денежный баланс, уменьшает количество актива)
+            - 'revaluation': Изменение стоимости актива (обновляет цену, не меняет количество)
+            - 'dividend': Дивиденды (увеличивает денежный баланс)
         description:
           type: string
           description: Human-readable description of the transaction
@@ -387,12 +409,16 @@ components:
           example: 100.50
         type:
           type: string
-          enum: [income, expense]
+          enum: [deposit, withdrawal, buy, sell, revaluation, dividend]
           description: |
             Type of transaction:
-            - 'income': Increases the asset balance
-            - 'expense': Decreases the asset balance
-          example: "income"
+            - 'deposit': Ввод средств
+            - 'withdrawal': Вывод средств
+            - 'buy': Покупка актива
+            - 'sell': Продажа актива
+            - 'revaluation': Изменение стоимости
+            - 'dividend': Дивиденды
+          example: "deposit"
         description:
           type: string
           description: Human-readable description of the transaction

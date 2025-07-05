@@ -12,4 +12,15 @@ type Asset struct {
 	Type      string    `db:"type" json:"type"`
 	Balance   float64   `db:"balance" json:"balance"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
+
+	// XIRR доходность (не хранится в БД, только для ответа)
+	Xirr *float64 `json:"xirr,omitempty"`
+
+	// APY доходность (не хранится в БД, только для ответа)
+	Apy *float64 `json:"apy,omitempty"`
+
+	// APR доходность (не хранится в БД, только для ответа)
+	Apr *float64 `json:"apr,omitempty"`
+
+	Profit *float64 `json:"profit,omitempty"`
 }
