@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // CreateAssetRequest используется для данных при создании актива
 type CreateAssetRequest struct {
 	Name string `json:"name" binding:"required"`
@@ -15,9 +17,10 @@ type UpdateAssetRequest struct {
 
 // CreateTransactionRequest используется для данных при создании транзакции
 type CreateTransactionRequest struct {
-	Amount      float64 `json:"amount"`
-	Type        string  `json:"type" binding:"required,oneof=deposit withdrawal buy sell revaluation dividend"` // Тип операции
-	Description string  `json:"description"`
+	Amount      float64    `json:"amount"`
+	Type        string     `json:"type" binding:"required,oneof=deposit withdrawal buy sell revaluation dividend"` // Тип операции
+	Description string     `json:"description"`
+	Timestamp   *time.Time `json:"timestamp,omitempty"` // Опциональное поле для указания времени транзакции
 }
 
 // LoginRequest Модель запроса на логин

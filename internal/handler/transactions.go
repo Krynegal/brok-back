@@ -83,13 +83,19 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	// Генерация нового UUID для транзакции
 	transactionID := uuid.New().String()
 
+	// Определяем timestamp для транзакции
+	timestamp := time.Now()
+	if req.Timestamp != nil {
+		timestamp = *req.Timestamp
+	}
+
 	transaction := models.Transaction{
 		ID:          transactionID,
 		AssetID:     assetID,
 		Amount:      req.Amount,
 		Type:        req.Type,
 		Description: req.Description,
-		Timestamp:   time.Now(),
+		Timestamp:   timestamp,
 	}
 
 	// Выполняем операции в транзакции

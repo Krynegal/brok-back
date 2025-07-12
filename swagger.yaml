@@ -423,6 +423,14 @@ components:
           type: string
           description: Human-readable description of the transaction
           example: "Salary payment"
+        timestamp:
+          type: string
+          format: date-time
+          description: |
+            Optional timestamp for the transaction. 
+            If not provided, current time will be used.
+            Useful for historical data or corrections.
+          example: "2024-01-15T10:30:00Z"
   securitySchemes:
     BearerAuth:
       type: http
