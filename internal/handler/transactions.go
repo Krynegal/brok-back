@@ -89,10 +89,17 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 		timestamp = *req.Timestamp
 	}
 
+	// Проверяем, поддерживается ли валюта
+	if !models.IsCurrencySupported(req.Currency) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported currency: " + req.Currency})
+		return
+	}
+
 	transaction := models.Transaction{
 		ID:          transactionID,
 		AssetID:     assetID,
 		Amount:      req.Amount,
+		Currency:    req.Currency,
 		Type:        req.Type,
 		Description: req.Description,
 		Timestamp:   timestamp,

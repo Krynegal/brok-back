@@ -9,23 +9,26 @@ import (
 
 // User Основная модель: для чтения данных из базы
 type User struct {
-	ID        string    `db:"id" json:"id"`
-	Email     string    `db:"email" json:"email"`
-	CreatedAt time.Time `db:"created_at" json:"created_at"`
+	ID           string    `db:"id" json:"id"`
+	Email        string    `db:"email" json:"email"`
+	BaseCurrency string    `db:"base_currency" json:"base_currency"`
+	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 }
 
 // UserWithPassword Модель с паролем — используется только внутри приложения
 type UserWithPassword struct {
 	ID           string    `db:"id"`
 	Email        string    `db:"email"`
+	BaseCurrency string    `db:"base_currency"`
 	PasswordHash string    `db:"password_hash"`
 	CreatedAt    time.Time `db:"created_at" json:"created_at"`
 }
 
 // RegisterRequest Модель запроса на регистрацию
 type RegisterRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=6"`
+	Email        string `json:"email" binding:"required,email"`
+	Password     string `json:"password" binding:"required,min=6"`
+	BaseCurrency string `json:"base_currency" binding:"required,len=3"`
 }
 
 // LoginResponse Ответ при логине (JWT)

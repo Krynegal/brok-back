@@ -1,4 +1,4 @@
-.PHONY: test lint deps check migrate-up migrate-down run debug
+.PHONY: test lint deps check migrate-up migrate-down run debug update-rates
 
 # Run tests
 test:
@@ -23,6 +23,15 @@ migrate-up:
 # Run migrations down
 migrate-down:
 	docker run --rm -v $(PWD)/db/migrations:/migrations --network host migrate/migrate -path=/migrations -database "postgres://postgres:postgres@localhost:5433/tracker?sslmode=disable" down
+
+# Update exchange rates
+update-rates:
+	@echo "🔄 Проверка и обновление курсов валют..."
+	@curl -X POST http://localhost:8080/api/exchange-rates/update-if-needed \
+		-H "Authorization: Bearer $(shell curl -s -X POST http://localhost:8080/auth/login \
+			-H "Content-Type: application/json" \
+			-d '{"email":"admin@example.com","password":"password"}' | jq -r '.token')" \
+		|| echo "⚠️  Не удалось обновить курсы валют (возможно, сервер не запущен)"
 
 # Run application locally
 run:

@@ -2,27 +2,53 @@ openapi: 3.0.0
 info:
   title: Brok API
   description: |
-    A financial tracking API for brok.
+    API для управления личными финансами и инвестициями.
     
-    ## Key Features:
-    - **Automatic Balance Updates**: Asset balances are automatically updated when transactions are created or deleted
-    - **Transaction Types**: Support for 'income' (positive balance change) and 'expense' (negative balance change)
-    - **Real-time Balance Calculation**: Asset balance reflects the sum of all associated transactions
+    ## Основные возможности:
+    - Управление активами (акции, облигации, депозиты и т.д.)
+    - Отслеживание транзакций (покупки, продажи, дивиденды)
+    - Расчет доходности (XIRR, APY, APR)
+    - Мультивалютная поддержка
+    - Курсы валют и конвертация
     
-    ## Transaction Behavior:
-    - **Creating a transaction**: Automatically updates the asset's balance
-    - **Deleting a transaction**: Automatically reverses the balance change
-    - **Balance calculation**: Balance = sum(income transactions) - sum(expense transactions)
+    ## Аутентификация:
+    Все защищенные эндпоинты требуют JWT токен в заголовке `Authorization: Bearer <token>`
+    
+    ## Валюты:
+    Поддерживаются основные валюты: USD, EUR, RUB, GBP, JPY, CNY, CHF, CAD, AUD, KRW
   version: 1.0.0
+
 servers:
   - url: http://localhost:8080
-    description: Local development server
+    description: Development server
+  - url: https://api.brok.com
+    description: Production server
+
 paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check
+      description: Проверка работоспособности сервера
+      responses:
+        '200':
+          description: Сервер работает
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+
   /auth/register:
     post:
       tags:
         - auth
-      summary: Register a new user
+      summary: Регистрация пользователя
+      description: Создание нового аккаунта пользователя
       requestBody:
         required: true
         content:
@@ -31,20 +57,29 @@ paths:
               $ref: '#/components/schemas/RegisterRequest'
       responses:
         '200':
-          description: Successful registration
+          description: Пользователь успешно зарегистрирован
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "user registered successfully"
+                  user_id:
+                    type: string
+                    format: uuid
         '400':
-          description: Invalid request body
+          description: Неверные данные запроса
         '409':
-          description: User with this email already exists
+          description: Пользователь с таким email уже существует
+
   /auth/login:
     post:
       tags:
         - auth
-      summary: Login user
+      summary: Вход в систему
+      description: Аутентификация пользователя и получение JWT токена
       requestBody:
         required: true
         content:
@@ -53,39 +88,50 @@ paths:
               $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
-          description: Successful login
+          description: Успешная аутентификация
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/LoginResponse'
         '401':
-          description: Invalid credentials
+          description: Неверные учетные данные
+
   /api/me:
     get:
       tags:
-        - users
-      summary: Get current user information
+        - auth
+      summary: Получить текущего пользователя
+      description: Возвращает информацию о текущем аутентифицированном пользователе
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: OK
+          description: Информация о пользователе
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
         '401':
-          description: Unauthorized
+          description: Неавторизованный доступ
+
   /api/assets:
     get:
       tags:
         - assets
-      summary: Get user's assets
+      summary: Получить все активы пользователя
+      description: |
+        Возвращает список всех активов текущего пользователя с расчетом доходности.
+        
+        Для каждого актива рассчитываются:
+        - XIRR (внутренняя норма доходности)
+        - APY (эффективная годовая доходность)
+        - APR (простая годовая ставка)
+        - Прибыль (чистая прибыль)
       security:
         - BearerAuth: []
       responses:
         '200':
-          description: A list of assets
+          description: Список активов
           content:
             application/json:
               schema:
@@ -93,11 +139,13 @@ paths:
                 items:
                   $ref: '#/components/schemas/Asset'
         '401':
-          description: Unauthorized
+          description: Неавторизованный доступ
+
     post:
       tags:
         - assets
-      summary: Create a new asset
+      summary: Создать новый актив
+      description: Создает новый актив для текущего пользователя
       security:
         - BearerAuth: []
       requestBody:
@@ -108,20 +156,36 @@ paths:
               $ref: '#/components/schemas/CreateAssetRequest'
       responses:
         '200':
-          description: Asset created successfully
+          description: Актив успешно создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "asset created successfully"
+                  asset_id:
+                    type: string
+                    format: uuid
         '400':
-          description: Invalid request body
+          description: Неверные данные запроса
+        '401':
+          description: Неавторизованный доступ
+
   /api/assets/{id}:
     patch:
       tags:
         - assets
-      summary: Update an existing asset
+      summary: Обновить актив
+      description: Обновляет существующий актив пользователя
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID актива для обновления
           schema:
             type: string
             format: uuid
@@ -133,45 +197,75 @@ paths:
               $ref: '#/components/schemas/UpdateAssetRequest'
       responses:
         '200':
-          description: Asset updated successfully
+          description: Актив успешно обновлен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "asset updated successfully"
+        '400':
+          description: Неверные данные запроса
+        '401':
+          description: Неавторизованный доступ
         '404':
-          description: Asset not found
+          description: Актив не найден
+
     delete:
       tags:
         - assets
-      summary: Delete an asset
+      summary: Удалить актив
+      description: |
+        Удаляет актив и все связанные с ним транзакции.
+        
+        **Внимание**: Операция необратима!
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
+          description: ID актива для удаления
           schema:
             type: string
             format: uuid
       responses:
         '200':
-          description: Asset deleted successfully
+          description: Актив и транзакции успешно удалены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "asset and related transactions deleted successfully"
+        '401':
+          description: Неавторизованный доступ
         '404':
-          description: Asset not found
+          description: Актив не найден
+
   /api/assets/{id}/transactions:
     get:
       tags:
         - transactions
-      summary: Get transactions for an asset
+      summary: Получить транзакции актива
+      description: Возвращает все транзакции для указанного актива
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
-          description: ID of the asset to retrieve transactions for
+          description: ID актива
           schema:
             type: string
             format: uuid
       responses:
         '200':
-          description: A list of transactions for the asset
+          description: Список транзакций
           content:
             application/json:
               schema:
@@ -179,28 +273,33 @@ paths:
                 items:
                   $ref: '#/components/schemas/Transaction'
         '401':
-          description: Unauthorized
+          description: Неавторизованный доступ
         '404':
-          description: Asset not found
+          description: Актив не найден
+
     post:
       tags:
         - transactions
-      summary: Create a new transaction for an asset
+      summary: Создать транзакцию
       description: |
-        Creates a new transaction for the specified asset. 
+        Создает новую транзакцию для актива и автоматически обновляет его баланс.
         
-        **Important**: The asset's balance will be automatically updated:
-        - For 'income' transactions: balance increases by the amount
-        - For 'expense' transactions: balance decreases by the amount
+        **Типы транзакций:**
+        - `deposit` - ввод средств (увеличивает баланс)
+        - `withdrawal` - вывод средств (уменьшает баланс)
+        - `buy` - покупка актива (уменьшает баланс)
+        - `sell` - продажа актива (увеличивает баланс)
+        - `dividend` - дивиденды (увеличивает баланс)
+        - `revaluation` - переоценка (может увеличить или уменьшить баланс)
         
-        The operation is atomic - both the transaction creation and balance update happen in a single database transaction.
+        **Валюта:** Если валюта транзакции отличается от валюты актива, сумма будет автоматически конвертирована.
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
-          description: ID of the asset to create a transaction for
+          description: ID актива
           schema:
             type: string
             format: uuid
@@ -212,7 +311,7 @@ paths:
               $ref: '#/components/schemas/CreateTransactionRequest'
       responses:
         '200':
-          description: Transaction created successfully and asset balance updated
+          description: Транзакция успешно создана и баланс обновлен
           content:
             application/json:
               schema:
@@ -225,37 +324,36 @@ paths:
                     type: string
                     format: uuid
         '400':
-          description: Invalid request body or asset not found
+          description: Неверные данные запроса или актив не принадлежит пользователю
         '401':
-          description: Unauthorized
-        '404':
-          description: Asset not found
+          description: Неавторизованный доступ
+
   /api/transactions/{id}:
     delete:
       tags:
         - transactions
-      summary: Delete a transaction
+      summary: Удалить транзакцию
       description: |
-        Deletes a transaction and automatically reverses its effect on the asset's balance.
+        Удаляет транзакцию и автоматически отменяет её эффект на баланс актива.
         
-        **Important**: The asset's balance will be automatically updated:
-        - If the deleted transaction was 'income': balance decreases by the transaction amount
-        - If the deleted transaction was 'expense': balance increases by the transaction amount
+        **Важно**: Баланс актива будет автоматически обновлен:
+        - Если удаленная транзакция была 'доходом': баланс уменьшается на сумму транзакции
+        - Если удаленная транзакция была 'расходом': баланс увеличивается на сумму транзакции
         
-        The operation is atomic - both the transaction deletion and balance update happen in a single database transaction.
+        Операция атомарная - удаление транзакции и обновление баланса происходят в одной транзакции БД.
       security:
         - BearerAuth: []
       parameters:
         - name: id
           in: path
           required: true
-          description: ID of the transaction to delete
+          description: ID транзакции для удаления
           schema:
             type: string
             format: uuid
       responses:
         '200':
-          description: Transaction deleted successfully and asset balance updated
+          description: Транзакция удалена успешно и баланс актива обновлен
           content:
             application/json:
               schema:
@@ -265,11 +363,202 @@ paths:
                     type: string
                     example: "transaction deleted successfully"
         '400':
-          description: Transaction not found or doesn't belong to user
+          description: Транзакция не найдена или не принадлежит пользователю
         '401':
-          description: Unauthorized
+          description: Неавторизованный доступ
         '404':
-          description: Transaction not found
+          description: Транзакция не найдена
+
+  /api/currencies:
+    get:
+      tags:
+        - exchange-rates
+      summary: Получить поддерживаемые валюты
+      description: Возвращает список всех поддерживаемых валют с их символами
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Список поддерживаемых валют
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportedCurrency'
+        '401':
+          description: Неавторизованный доступ
+
+  /api/exchange-rates:
+    get:
+      tags:
+        - exchange-rates
+      summary: Получить курс валют
+      description: |
+        Возвращает курс обмена между двумя валютами.
+        
+        Если дата не указана, возвращается последний доступный курс.
+        Если указана дата, возвращается курс на эту дату (если доступен).
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from_currency
+          in: query
+          required: true
+          description: Исходная валюта
+          schema:
+            type: string
+            example: "USD"
+        - name: to_currency
+          in: query
+          required: true
+          description: Целевая валюта
+          schema:
+            type: string
+            example: "EUR"
+        - name: date
+          in: query
+          required: false
+          description: Дата курса в формате YYYY-MM-DD
+          schema:
+            type: string
+            format: date
+            example: "2024-01-15"
+      responses:
+        '200':
+          description: Курс валют
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from_currency:
+                    type: string
+                    example: "USD"
+                  to_currency:
+                    type: string
+                    example: "EUR"
+                  rate:
+                    type: number
+                    format: float
+                    example: 0.85
+                  date:
+                    type: string
+                    format: date
+                    example: "2024-01-15"
+        '400':
+          description: Неверные данные запроса или неподдерживаемая валюта
+        '401':
+          description: Неавторизованный доступ
+        '404':
+          description: Курс не найден
+
+  /api/exchange-rates/update:
+    post:
+      tags:
+        - exchange-rates
+      summary: Обновить курсы валют
+      description: |
+        Обновляет курсы валют из внешнего API.
+        
+        **Внимание**: Эта операция может занять некоторое время, так как запрашиваются курсы для всех поддерживаемых валют.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Курсы валют успешно обновлены
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "exchange rates updated successfully"
+        '401':
+          description: Неавторизованный доступ
+        '500':
+          description: Ошибка при обновлении курсов
+
+  /api/convert:
+    get:
+      tags:
+        - exchange-rates
+      summary: Конвертировать сумму
+      description: |
+        Конвертирует сумму из одной валюты в другую.
+        
+        **Параметры:**
+        - `from_currency` - исходная валюта (обязательно)
+        - `to_currency` - целевая валюта (обязательно)
+        - `amount` - сумма для конвертации (обязательно)
+        - `date` - дата курса (опционально, если не указана - используется последний курс)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: from_currency
+          in: query
+          required: true
+          description: Исходная валюта
+          schema:
+            type: string
+            example: "USD"
+        - name: to_currency
+          in: query
+          required: true
+          description: Целевая валюта
+          schema:
+            type: string
+            example: "EUR"
+        - name: amount
+          in: query
+          required: true
+          description: Сумма для конвертации
+          schema:
+            type: number
+            format: float
+            example: 100.50
+        - name: date
+          in: query
+          required: false
+          description: Дата курса в формате YYYY-MM-DD
+          schema:
+            type: string
+            format: date
+            example: "2024-01-15"
+      responses:
+        '200':
+          description: Конвертированная сумма
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  from_currency:
+                    type: string
+                    example: "USD"
+                  to_currency:
+                    type: string
+                    example: "EUR"
+                  original_amount:
+                    type: number
+                    format: float
+                    example: 100.50
+                  converted_amount:
+                    type: number
+                    format: float
+                    example: 85.43
+                  date:
+                    type: string
+                    format: date
+                    example: "2024-01-15"
+        '400':
+          description: Неверные параметры запроса
+        '401':
+          description: Неавторизованный доступ
+        '404':
+          description: Курс не найден
+
 components:
   schemas:
     User:
@@ -281,6 +570,10 @@ components:
         email:
           type: string
           format: email
+        base_currency:
+          type: string
+          description: Базовая валюта пользователя для отображения
+          example: "USD"
         created_at:
           type: string
           format: date-time
@@ -304,6 +597,10 @@ components:
             Current balance of the asset. 
             This value is automatically calculated and updated based on all associated transactions.
             Balance = sum(income transactions) - sum(expense transactions)
+        currency:
+          type: string
+          description: Валюта актива (ISO 4217 код)
+          example: "USD"
         created_at:
           type: string
           format: date-time
@@ -338,6 +635,10 @@ components:
           type: number
           format: decimal
           description: The monetary amount of the transaction
+        currency:
+          type: string
+          description: Валюта транзакции (ISO 4217 код)
+          example: "USD"
         type:
           type: string
           enum: [deposit, withdrawal, buy, sell, revaluation, dividend]
@@ -356,9 +657,45 @@ components:
           type: string
           format: date-time
           description: When the transaction was created
+    SupportedCurrency:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Код валюты (ISO 4217)
+          example: "USD"
+        name:
+          type: string
+          description: Название валюты
+          example: "US Dollar"
+        symbol:
+          type: string
+          description: Символ валюты
+          example: "$"
+        is_supported:
+          type: boolean
+          description: Поддерживается ли валюта
+          example: true
+    ExchangeRateRequest:
+      type: object
+      required: [from_currency, to_currency]
+      properties:
+        from_currency:
+          type: string
+          description: Исходная валюта
+          example: "USD"
+        to_currency:
+          type: string
+          description: Целевая валюта
+          example: "EUR"
+        date:
+          type: string
+          format: date
+          description: Дата курса (опционально)
+          example: "2024-01-15"
     RegisterRequest:
       type: object
-      required: [email, password]
+      required: [email, password, base_currency]
       properties:
         email:
           type: string
@@ -366,6 +703,10 @@ components:
         password:
           type: string
           minLength: 6
+        base_currency:
+          type: string
+          description: Базовая валюта пользователя
+          example: "USD"
     LoginRequest:
       type: object
       required: [email, password]
@@ -382,12 +723,16 @@ components:
           type: string
     CreateAssetRequest:
       type: object
-      required: [name, type]
+      required: [name, type, currency]
       properties:
         name:
           type: string
         type:
           type: string
+        currency:
+          type: string
+          description: Валюта актива
+          example: "USD"
     UpdateAssetRequest:
       type: object
       properties:
@@ -398,15 +743,23 @@ components:
         balance:
           type: number
           format: decimal
+        currency:
+          type: string
+          description: Валюта актива
+          example: "USD"
     CreateTransactionRequest:
       type: object
-      required: [amount, type, description]
+      required: [amount, currency, type, description]
       properties:
         amount:
           type: number
           format: decimal
           description: The monetary amount of the transaction
           example: 100.50
+        currency:
+          type: string
+          description: Валюта транзакции
+          example: "USD"
         type:
           type: string
           enum: [deposit, withdrawal, buy, sell, revaluation, dividend]

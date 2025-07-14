@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 
@@ -38,6 +39,12 @@ type Storage interface {
 	GetTransactionByID(ctx context.Context, transactionID string) (*models.Transaction, error)
 	GetTransactionByIDTx(ctx context.Context, tx Tx, transactionID string) (*models.Transaction, error)
 	DeleteTransactionsByAssetIDTx(ctx context.Context, tx Tx, assetID string) error
+
+	// exchange rates
+	SaveExchangeRate(ctx context.Context, rate models.ExchangeRate) error
+	GetExchangeRate(ctx context.Context, fromCurrency, toCurrency string, date time.Time) (float64, error)
+	GetLatestExchangeRate(ctx context.Context, fromCurrency, toCurrency string) (float64, error)
+	GetLastExchangeRateUpdate(ctx context.Context) (*time.Time, error)
 
 	// служебные
 	Transaction(ctx context.Context, f TxFunc) (err error)

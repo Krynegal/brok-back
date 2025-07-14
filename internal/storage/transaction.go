@@ -26,7 +26,7 @@ func (s *PqStorage) GetTransactionsByAssetIDTx(ctx context.Context, tx Tx, asset
 	transactions := []models.Transaction{}
 
 	rows, err := tx.QueryxContext(ctx,
-		`SELECT id, asset_id, amount, type, description, timestamp 
+		`SELECT id, asset_id, amount, currency, type, description, timestamp 
 		FROM transactions 
 		WHERE asset_id = $1`,
 		assetID)
@@ -53,8 +53,8 @@ func (s *PqStorage) CreateTransaction(ctx context.Context, transaction models.Tr
 func (s *PqStorage) CreateTransactionTx(ctx context.Context, tx Tx, transaction models.Transaction) error {
 	_, err := tx.NamedExecContext(
 		ctx,
-		`INSERT INTO transactions (id, asset_id, amount, type, description, timestamp)
-		VALUES (:id, :asset_id, :amount, :type, :description, :timestamp)`,
+		`INSERT INTO transactions (id, asset_id, amount, currency, type, description, timestamp)
+		VALUES (:id, :asset_id, :amount, :currency, :type, :description, :timestamp)`,
 		transaction,
 	)
 	return err
@@ -82,7 +82,7 @@ func (s *PqStorage) GetTransactionByIDTx(ctx context.Context, tx Tx, transaction
 	err := tx.GetContext(
 		ctx,
 		&transaction,
-		`SELECT id, asset_id, amount, type, description, timestamp FROM transactions WHERE id = $1`,
+		`SELECT id, asset_id, amount, currency, type, description, timestamp FROM transactions WHERE id = $1`,
 		transactionID,
 	)
 	if err != nil {

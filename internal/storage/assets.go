@@ -9,7 +9,7 @@ import (
 func (s *PqStorage) AssetsByUserId(ctx context.Context, userID string) ([]models.Asset, error) {
 	rows, err := s.db.QueryxContext(
 		ctx,
-		`SELECT id, user_id, name, type, balance FROM assets WHERE user_id = $1`,
+		`SELECT id, user_id, name, type, balance, currency FROM assets WHERE user_id = $1`,
 		userID,
 	)
 	if err != nil {
@@ -41,12 +41,13 @@ func (s *PqStorage) AssetsByUserId(ctx context.Context, userID string) ([]models
 
 func (s *PqStorage) AssetSet(ctx context.Context, asset models.Asset) error {
 	const query = `
-		insert into assets(id, user_id, name, type, balance, created_at)
-		values (:id, :user_id, :name, :type, :balance, :created_at)
+		insert into assets(id, user_id, name, type, balance, currency, created_at)
+		values (:id, :user_id, :name, :type, :balance, :currency, :created_at)
         on conflict(id) do update
 		set name=excluded.name,
                 type=excluded.type,
-		    balance=excluded.balance
+		    balance=excluded.balance,
+		    currency=excluded.currency
 	`
 
 	_, err := s.db.NamedExecContext(ctx, query, asset)

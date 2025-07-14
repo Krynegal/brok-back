@@ -27,11 +27,12 @@ func (s *PqStorage) UserCreate(ctx context.Context, user *models.UserWithPasswor
 
 	_, err := s.db.NamedExecContext(
 		ctx,
-		`insert into users(id, email, password_hash, created_at)
-        values (:id, :email, :password_hash, :created_at)
+		`insert into users(id, email, password_hash, base_currency, created_at)
+        values (:id, :email, :password_hash, :base_currency, :created_at)
         on conflict(id) do update
             set email=excluded.email,
-                password_hash=excluded.password_hash`,
+                password_hash=excluded.password_hash,
+                base_currency=excluded.base_currency`,
 		user)
 	if err != nil {
 		return err
@@ -42,14 +43,14 @@ func (s *PqStorage) UserCreate(ctx context.Context, user *models.UserWithPasswor
 
 func (s *PqStorage) UserByID(ctx context.Context, userID string) (*models.User, error) {
 	var user models.User
-	err := s.db.Get(&user, `SELECT id, email, created_at FROM users WHERE id = $1`, userID)
+	err := s.db.Get(&user, `SELECT id, email, base_currency, created_at FROM users WHERE id = $1`, userID)
 
 	return &user, err
 }
 
 func (s *PqStorage) UserByEmail(ctx context.Context, email string) (*models.UserWithPassword, error) {
 	var user models.UserWithPassword
-	err := s.db.GetContext(ctx, &user, `SELECT id, email, password_hash, created_at FROM users WHERE email = $1`, email)
+	err := s.db.GetContext(ctx, &user, `SELECT id, email, password_hash, base_currency, created_at FROM users WHERE email = $1`, email)
 	return &user, err
 }
 

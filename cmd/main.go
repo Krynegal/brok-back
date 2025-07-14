@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
 	"runtime/debug"
+	"time"
 
 	"brok/db"
 	"brok/internal/handler"
 	"brok/internal/routes"
+	"brok/internal/services"
 	"brok/internal/storage"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +35,27 @@ func main() {
 
 	storage := storage.New(db)
 
+	// Инициализация сервисов
+	exchangeRateService := services.NewExchangeRateService(storage)
+
+	// Проверяем и обновляем курсы валют при запуске (если прошло больше часа)
+	updateInterval := 1 * time.Hour
+	if err := exchangeRateService.UpdateExchangeRatesIfNeeded(context.Background(), updateInterval); err != nil {
+		log.Printf("⚠️  Не удалось обновить курсы валют: %v", err)
+	}
+
+	// Запуск периодического обновления курсов (каждый час)
+	go func() {
+		ticker := time.NewTicker(updateInterval)
+		defer ticker.Stop()
+
+		for range ticker.C {
+			if err := exchangeRateService.UpdateExchangeRatesIfNeeded(context.Background(), updateInterval); err != nil {
+				log.Printf("⚠️  Не удалось обновить курсы валют: %v", err)
+			}
+		}
+	}()
+
 	// Настройка Gin
 	ginMode := os.Getenv("GIN_MODE")
 	if ginMode == "" {
@@ -42,6 +66,7 @@ func main() {
 	authHandler := handler.NewAuthHandler(storage)
 	assetHandler := handler.NewAssetHandler(storage)
 	transactionHandler := handler.NewTransactionHandler(storage)
+	exchangeRateHandler := handler.NewExchangeRateHandler(exchangeRateService)
 	r := gin.Default()
 
 	// This route serves our static swagger.yaml file
@@ -67,7 +92,7 @@ func main() {
 	})
 
 	// Регистрируем маршруты
-	routes.RegisterRoutes(r, authHandler, assetHandler, transactionHandler)
+	routes.RegisterRoutes(r, authHandler, assetHandler, transactionHandler, exchangeRateHandler)
 
 	// Запуск сервера
 	port := os.Getenv("PORT")

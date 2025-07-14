@@ -181,12 +181,19 @@ func (h *AssetHandler) CreateAsset(c *gin.Context) {
 	// Генерируем новый UUID для актива
 	assetID := uuid.New().String()
 
+	// Проверяем, поддерживается ли валюта
+	if !models.IsCurrencySupported(req.Currency) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "unsupported currency: " + req.Currency})
+		return
+	}
+
 	// Данные для сохранения в БД
 	asset := models.Asset{
 		ID:        assetID,
 		UserID:    userIDStr, //c.MustGet("user_id").(string), // Извлекаем user_id из контекста
 		Name:      req.Name,
 		Type:      req.Type,
+		Currency:  req.Currency,
 		Balance:   0.0, // Начальный баланс
 		CreatedAt: time.Now(),
 	}

@@ -11,6 +11,7 @@ type Asset struct {
 	Name      string    `db:"name" json:"name"`
 	Type      string    `db:"type" json:"type"`
 	Balance   float64   `db:"balance" json:"balance"`
+	Currency  string    `db:"currency" json:"currency"`
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 
 	// XIRR доходность (не хранится в БД, только для ответа)
